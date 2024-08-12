@@ -89,7 +89,7 @@ const readCharChangedPairing = async (event) => {
       setState("REQUESTING_RANDOM");
       return writeChar.writeValue(buffer);
     });
-    await delayPromise(100);
+    await delayPromise(10);
 
     globalAccountId = accountId;
     globalPasssword = password;
@@ -111,7 +111,7 @@ const readCharChangedPairing = async (event) => {
       logValue(view);
       return writeChar.writeValue(buffer);
     });
-    await delayPromise(100);
+    await delayPromise(10);
 
     // send time offset
     setState("SENDING_TIME_OFFSET");
@@ -122,7 +122,7 @@ const readCharChangedPairing = async (event) => {
       view.setUint32(1, 0x0af8d1d0, true);
       return writeChar.writeValue(buffer);
     });
-    await delayPromise(100);
+    await delayPromise(10);
 
     // send disconnection
     setState("SENDING_DISCONNECTION");
