@@ -1,0 +1,130 @@
+<h1>Test Page to connect to a Transtek Tensiometer</h1>
+<p>This page is a test page to connect to a Transtek Tensiometer using Web Bluetooth API.</p>
+
+<button id="requestBluetoothDevice">Add a new Bluetooth Device</button>
+<button id="pairHRD">Pair Heart Rate Device</button>
+<button id="pairScale">Pair Scale</button>
+<button id="measureHeartRate">Start Heart Rate Measure</button>
+<h3>Authorized devices connect buttons</h3>
+<div id="connectButtons"></div>
+
+<h3>Live Output</h3>
+<pre id="log"></pre>
+<button id="clearLogs">Clear logs</button>
+
+<script src="helpers.js"></script>
+<script src="bluetooth-logic.js"></script>
+<script>
+  const isWebBluetoothEnabled = !!navigator.bluetooth;
+  const v = {
+    clearLogsBtn: document.querySelector('#clearLogs'),
+    requestBTDeviceBtn: document.querySelector('#requestBluetoothDevice'),
+    connectBtns: document.querySelector('#connectButtons'),
+    measureHeartRateBtn: document.querySelector('#measureHeartRate'),
+    pairHRDBtn: document.querySelector('#pairHRD'),
+    pairScaleBtn: document.querySelector('#pairScale'),
+  }
+
+  const connectToBTDevice = async (deviceName) => {
+    log("Getting existing permitted Bluetooth devices...");
+    const devices = await navigator.bluetooth.getDevices();
+    const device = devices.find(
+      (pairedDevice) => pairedDevice.name === deviceName
+    );
+    if (!device) {
+      log(`No authorized device was found with this name: ${deviceName}`);
+      return;
+    }
+    log(`"${deviceName}" was found, attempting connection...`);
+
+    const gattServer = await device.gatt.connect();
+    log(`Connected successfully to ${deviceName}`);
+    return gattServer;
+  }
+
+  const showAuthorizedBTDevice = async () => {
+    v.connectBtns.innerHTML = '';
+    const devices = await navigator.bluetooth.getDevices();
+    const buttons = devices.map((device) => {
+      const onclick = () => {
+        log(`Connecting to ${device.name}...`);
+        connectToBTDevice(device.name).catch((error) => {
+          log(`Error connecting to ${device.name}: ${error}`);
+          throw error;
+        });
+      }
+      return getBtnForDevice(device.name, onclick);
+    });
+
+    buttons.forEach((button) => v.connectBtns.appendChild(button));
+  }
+
+  v.requestBTDeviceBtn.addEventListener('click', async () => {
+    const authorizedDevices = await navigator.bluetooth.getDevices();
+    log("Prompting user for a new device...");
+    const device = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+    });
+    log(`> User picked ${device.name}`);
+    showAuthorizedBTDevice()
+      .catch((error) => {
+        log(`Error showing authorized devices: ${error}`);
+        throw error;
+      });
+  });
+
+  v.pairHRDBtn.addEventListener('click', async () => {
+    log("Prompting user for a new device...");
+    const filter = BLOOD_PRESSURE_MONITOR_OPTS.scanFilter;
+    const device = await navigator.bluetooth.requestDevice(filter);
+    log(`> User picked ${device.name}`);
+
+    await pairDevice(device)
+      .catch((error) => {
+        log(`Error measuring heart rate: ${error}`);
+        throw error;
+      });
+  });
+
+  v.pairScaleBtn.addEventListener('click', async () => {
+    log("Prompting user for a new device...");
+    const filter = SCALE_OPTS.scanFilter;
+    const device = await navigator.bluetooth.requestDevice(filter);
+    log(`> User picked ${device.name}`);
+
+    await pairDevice(device)
+      .catch((error) => {
+        log(`Error measuring heart rate: ${error}`);
+        throw error;
+      });
+  });
+
+
+  v.measureHeartRateBtn.addEventListener('click', async () => {
+    log("Prompting user for a new device...");
+    const filter = BLOOD_PRESSURE_MONITOR_OPTS.scanFilter;
+    const device = await navigator.bluetooth.requestDevice(filter);
+    log(`> User picked ${device.name}`);
+
+    await measureHeartRateWithDevice()
+      .catch((error) => {
+        log(`Error measuring heart rate: ${error}`);
+        throw error;
+      });
+  });
+
+  v.clearLogsBtn.addEventListener('click', () => clearLog());
+
+
+  const main = async () => {
+    if (!isWebBluetoothEnabled) {
+      return log([
+        'Web Bluetooth API is not available.',
+        'Please make sure the Web Bluetooth flag is enabled in chrome://flags.'
+      ].join('\n'));
+    }
+    showAuthorizedBTDevice();
+  }
+
+  main();
+</script>
