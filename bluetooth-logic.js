@@ -1,5 +1,6 @@
 let globalAccountId, globalPassword;
 let globalState = "IDLE",
+  globalServer,
   globalService,
   globalReadChar;
 // HRD means Heart Rate Device
@@ -21,6 +22,15 @@ const setHRDState = (state) => {
   log("Setting HRD state to: " + state);
   globalHRDState = state;
 };
+
+const BLUETOOTH_COMMANDS = Object.freeze({
+  PASSWORD: 0xa0,
+  ACCOUNT: 0x21,
+  RANDOM: 0xa1,
+  VERIFICATION_CODE: 0x20,
+  TIME_OFFSET: 0x02,
+  DISCONNECT: 0x22,
+});
 
 const SCALE_OPTS = {
   bluetoothStorageKey: 0x7802,
@@ -61,11 +71,18 @@ const pairDevice = async (device) => {
   await readChar.startNotifications();
   log("> Notifications started");
 
+  // log to the screen if the gatt server disconnects
+  if (!globalServer) {
+    device.addEventListener("gattserverdisconnected", () => {
+      log("GATT server disconnected");
+    });
+  }
   readChar.addEventListener(
     "characteristicvaluechanged",
     readCharChangedPairing
   );
 
+  globalServer = server;
   globalService = service;
   globalReadChar = readChar;
 };
@@ -74,14 +91,15 @@ const readCharChangedPairing = async (event) => {
   let value = event.target.value;
   log("read value : " + value);
   // We are receiving the password...
-  if (value.getUint8(0).toString(16) === "a0") {
+  if (value.getUint8(0) === BLUETOOTH_COMMANDS.PASSWORD) {
     setState("RECEIVED_PASSWORD");
     const password = value.getUint32(1, true);
     logValue(password);
     //  get accountId from accountId16
     const accountId = parseInt(globalAccountId16, 16);
     // send account id
-    await globalService.getCharacteristic(0x8a81).then((writeChar) => {
+    const service = await globalServer.getPrimaryService(0x7809);
+    await service.getCharacteristic(0x8a81).then((writeChar) => {
       const buffer = new ArrayBuffer(5);
       const view = new DataView(buffer);
       view.setUint8(0, 0x21);
@@ -89,20 +107,21 @@ const readCharChangedPairing = async (event) => {
       setState("REQUESTING_RANDOM");
       return writeChar.writeValue(buffer);
     });
-    await delayPromise(10);
+    // await delayPromise(10);
 
     globalAccountId = accountId;
     globalPasssword = password;
   }
   // We are receiving the random value...
-  if (value.getUint8(0).toString(16) === "a1") {
+  if (value.getUint8(0) === BLUETOOTH_COMMANDS.RANDOM) {
     setState("RECEIVED_RANDOM_FOR_VERIFICATION");
     const random = value.getUint32(1, true);
     logValue(random);
     // calculate verification code
     const verificationCode = computeVerificationCode(globalPassword, random);
     // send verification code
-    await globalService.getCharacteristic(0x8a81).then((writeChar) => {
+    const service = await globalServer.getPrimaryService(0x7809);
+    await service.getCharacteristic(0x8a81).then((writeChar) => {
       const buffer = new ArrayBuffer(5);
       const view = new DataView(buffer);
       view.setUint8(0, 0x20);
@@ -111,22 +130,22 @@ const readCharChangedPairing = async (event) => {
       logValue(view);
       return writeChar.writeValue(buffer);
     });
-    await delayPromise(10);
+    // await delayPromise(10);
 
     // send time offset
     setState("SENDING_TIME_OFFSET");
-    await globalService.getCharacteristic(0x8a81).then((writeChar) => {
+    await service.getCharacteristic(0x8a81).then((writeChar) => {
       const buffer = new ArrayBuffer(5);
       const view = new DataView(buffer);
       view.setUint8(0, 0x02);
       view.setUint32(1, 0x0af8d1d0, true);
       return writeChar.writeValue(buffer);
     });
-    await delayPromise(10);
+    // await delayPromise(10);
 
     // send disconnection
     setState("SENDING_DISCONNECTION");
-    await globalService.getCharacteristic(0x8a81).then((writeChar) => {
+    await service.getCharacteristic(0x8a81).then((writeChar) => {
       const buffer = new ArrayBuffer(1);
       const view = new DataView(buffer);
       view.setUint8(0, 0x22);
