@@ -3,7 +3,6 @@
 
 <button id="requestBluetoothDevice">Add a new Bluetooth Device</button>
 <button id="pairHRD">Pair Heart Rate Device</button>
-<button id="pairScale">Pair Scale</button>
 <button id="measureHeartRate">Start Heart Rate Measure</button>
 <h3>Authorized devices connect buttons</h3>
 <div id="connectButtons"></div>
@@ -22,7 +21,6 @@
     connectBtns: document.querySelector('#connectButtons'),
     measureHeartRateBtn: document.querySelector('#measureHeartRate'),
     pairHRDBtn: document.querySelector('#pairHRD'),
-    pairScaleBtn: document.querySelector('#pairScale'),
   }
 
   const connectToBTDevice = async (deviceName) => {
@@ -79,26 +77,12 @@
     const device = await navigator.bluetooth.requestDevice(filter);
     log(`> User picked ${device.name}`);
 
-    await pairDevice(device)
+    await pairDevice(device, BLOOD_PRESSURE_MONITOR_OPTS)
       .catch((error) => {
         log(`Error measuring heart rate: ${error}`);
         throw error;
       });
   });
-
-  v.pairScaleBtn.addEventListener('click', async () => {
-    log("Prompting user for a new device...");
-    const filter = SCALE_OPTS.scanFilter;
-    const device = await navigator.bluetooth.requestDevice(filter);
-    log(`> User picked ${device.name}`);
-
-    await pairDevice(device)
-      .catch((error) => {
-        log(`Error measuring heart rate: ${error}`);
-        throw error;
-      });
-  });
-
 
   v.measureHeartRateBtn.addEventListener('click', async () => {
     log("Prompting user for a new device...");
