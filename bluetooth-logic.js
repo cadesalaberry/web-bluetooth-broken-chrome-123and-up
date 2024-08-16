@@ -1,4 +1,3 @@
-let globalAccountId, globalPassword;
 let globalState = "IDLE",
   /** @type {BluetoothRemoteGATTServer} */
   globalServer,
@@ -14,9 +13,10 @@ let globalHRDState = "IDLE",
   /** @type {BluetoothRemoteGATTCharacteristic} */
   globalHRDBPMReadChar;
 
-const globalAccountId16 = Math.floor(
-  Math.random() * (Math.pow(2, 32) - 1)
-).toString(16);
+let globalPassword;
+const globalAccountId = Math.floor(Math.random() * (Math.pow(2, 32) - 1));
+
+log("globalAccountId : " + globalAccountId);
 
 const setState = (state) => {
   log("Setting state to: " + state);
@@ -107,7 +107,7 @@ const readCharChangedPairing = async (event) => {
     const password = value.getUint32(1, true);
     logValue(password);
     //  get accountId from accountId16
-    const accountId = parseInt(globalAccountId16, 16);
+    const accountId = globalAccountId;
     // send account id
     await Promise.resolve(globalWriteChar).then((writeChar) => {
       const buffer = new ArrayBuffer(5);
@@ -118,8 +118,7 @@ const readCharChangedPairing = async (event) => {
       return writeChar.writeValue(buffer);
     });
 
-    globalAccountId = accountId;
-    globalPasssword = password;
+    globalPassword = password;
   }
   // We are receiving the random value...
   if (value.getUint8(0) === BLUETOOTH_COMMANDS.RANDOM) {

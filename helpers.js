@@ -33,6 +33,13 @@ function logValue(value) {
   ChromeSamples.log(log);
 }
 
+/**
+ * Computes the verification code to send back to the device.
+ *
+ * @param {DataView} password stored password
+ * @param {number} random random number received from device
+ * @returns verification code
+ */
 function computeVerificationCode(password, random) {
   return (password ^ random) >>> 0;
 }
