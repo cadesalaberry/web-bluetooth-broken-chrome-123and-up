@@ -90,7 +90,7 @@
     const device = await navigator.bluetooth.requestDevice(filter);
     log(`> User picked ${device.name}`);
 
-    await measureHeartRateWithDevice()
+    await measureHeartRateWithDevice(device)
       .catch((error) => {
         log(`Error measuring heart rate: ${error}`);
         throw error;

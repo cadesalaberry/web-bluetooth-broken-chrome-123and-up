@@ -1,8 +1,6 @@
 let globalState = "IDLE",
   /** @type {BluetoothRemoteGATTServer} */
   globalServer,
-  /** @type {BluetoothRemoteGATTService} */
-  globalService,
   /** @type {BluetoothRemoteGATTCharacteristic} */
   globalWriteChar;
 
@@ -11,7 +9,9 @@ let globalHRDState = "IDLE",
   /** @type {BluetoothRemoteGATTService} */
   globalHRDService,
   /** @type {BluetoothRemoteGATTCharacteristic} */
-  globalHRDBPMReadChar;
+  globalHRDBPMReadChar,
+  /** @type {BluetoothRemoteGATTCharacteristic} */
+  globalHRDBPMWriteChar;
 
 let globalPassword;
 const globalAccountId = Math.floor(Math.random() * (Math.pow(2, 32) - 1));
@@ -30,6 +30,7 @@ const setHRDState = (state) => {
 
 const TRANSTEK_WRITE_CHARACTERISTIC = 0x8a81; // [WRITE] Information transfer from App to Device
 const TRANSTEK_READ_CHARACTERISTIC = 0x8a82; // [Indicate] Information transfer from Device to App
+const TRANSTEK_BPM_READ_CHARACTERISTIC = 0x8a91; // [Indicate]: Blood pressure measurement transfer from Device to App
 const TRANSTEK_BASE_TIME = new Date(2010, 0, 1).getTime();
 const BLUETOOTH_COMMANDS = Object.freeze({
   PASSWORD: 0xa0,
@@ -91,7 +92,6 @@ const pairDevice = async (device) => {
   await readChar.startNotifications();
 
   globalServer = server;
-  globalService = service;
   globalWriteChar = writeChar;
   // When doing the pairing, all the conversation should be done with the same characteristic
   // It will not work if you try another service.getCharacteristic() call
@@ -106,9 +106,9 @@ const readCharChangedPairing = async (event) => {
     setState("RECEIVED_PASSWORD");
     const password = value.getUint32(1, true);
     logValue(password);
-    //  get accountId from accountId16
-    const accountId = globalAccountId;
+
     // send account id
+    const accountId = globalAccountId;
     await Promise.resolve(globalWriteChar).then((writeChar) => {
       const buffer = new ArrayBuffer(5);
       const view = new DataView(buffer);
@@ -166,65 +166,89 @@ const readCharChangedPairing = async (event) => {
 const measureHeartRateWithDevice = async (device) => {
   log("Measuring heart rate with Heart Rate Device (HRD)...");
   const server = await device.gatt.connect();
-  const service = await server.getPrimaryService(0x8a82);
-  const readChar = await service.getCharacteristic(0x8a91);
+  const serviceId = BLOOD_PRESSURE_MONITOR_OPTS.bluetoothStorageKey;
+  const service = await server.getPrimaryService(serviceId);
+  const readChar = await service.getCharacteristic(
+    TRANSTEK_READ_CHARACTERISTIC
+  );
+  const writeChar = await service.getCharacteristic(
+    TRANSTEK_WRITE_CHARACTERISTIC
+  );
 
   setHRDState("REQUESTING_RANDOM");
-  await readChar.startNotifications();
-  log("> HRD Notifications started");
 
   readChar.addEventListener("characteristicvaluechanged", (e) => {
     readCharChangedBpm(e);
-    readChar.removeEventListener(
-      "characteristicvaluechanged",
-      readCharChangedBpm
-    );
+    // readChar.removeEventListener(
+    //   "characteristicvaluechanged",
+    //   readCharChangedBpm
+    // );
   });
 
+  await readChar.startNotifications();
+  log("> HRD Notifications started");
+
   globalHRDService = service;
+  globalHRDBPMWriteChar = writeChar;
 };
 
 const readCharChangedBpm = async (event) => {
   /** @type {DataView} */
   const value = event.target.value;
   log("read value BPM : ", value);
-  if (value.getUint8(0).toString(16) === "a1") {
+  logValue(value);
+
+  // We are receiving the password...
+  if (value.getUint8(0) === BLUETOOTH_COMMANDS.PASSWORD) {
+    setState("RECEIVED_PASSWORD");
+    const password = value.getUint32(1, true);
+    logValue(password);
+
+    // send account id
+    const accountId = globalAccountId;
+    await Promise.resolve(globalHRDBPMWriteChar).then((writeChar) => {
+      const buffer = new ArrayBuffer(5);
+      const view = new DataView(buffer);
+      view.setUint8(0, 0x21);
+      view.setUint32(1, accountId, true);
+      setState("REQUESTING_RANDOM");
+      return writeChar.writeValue(buffer);
+    });
+
+    globalPassword = password;
+  }
+
+  if (value.getUint8(0) === BLUETOOTH_COMMANDS.RANDOM) {
     const random = value.getUint32(1, true);
     logValue(random);
     // calculate verification code
     setHRDState("VERIFYING_CODE");
     const verifCode = computeVerificationCode(globalPassword, random);
     // send verification code
-    await globalHRDService
-      .getCharacteristic(TRANSTEK_WRITE_CHARACTERISTIC)
-      .then((char) => {
-        const buffer = new ArrayBuffer(5);
-        const view = new DataView(buffer);
-        view.setUint8(0, 0x20);
-        view.setUint32(1, verifCode, true);
-        log("verifCode : ", view.getUint32(1, true).toString(16));
-        logValue(view);
-        return char.writeValue(buffer);
-      });
+    await Promise.resolve(globalHRDBPMWriteChar).then((writeChar) => {
+      const buffer = new ArrayBuffer(5);
+      const view = new DataView(buffer);
+      view.setUint8(0, BLUETOOTH_COMMANDS.VERIFICATION_CODE);
+      view.setUint32(1, verifCode, true);
+      log("verifCode : ", view.getUint32(1, true).toString(16));
+      logValue(view);
+      return writeChar.writeValue(buffer);
+    });
     // send time offset
     setHRDState("SENDING_TIME_OFFSET");
-    await globalHRDService
-      .getCharacteristic(TRANSTEK_WRITE_CHARACTERISTIC)
-      .then((char) => {
-        const buffer = new ArrayBuffer(5);
-        const view = new DataView(buffer);
-        view.setUint8(0, 0x02);
-        view.setUint32(1, 0x0af8d2d16, true);
-        return char.writeValue(buffer);
-      });
+    await Promise.resolve(globalHRDBPMWriteChar).then((writeChar) => {
+      const buffer = new ArrayBuffer(5);
+      const view = new DataView(buffer);
+      view.setUint8(0, BLUETOOTH_COMMANDS.TIME_OFFSET);
+      view.setUint32(1, 0x0af8d2d16, true);
+      return writeChar.writeValue(buffer);
+    });
 
     // Be ready to receive measurement data
     setHRDState("REQUEST_MEASUREMENT");
-    const bpmChar = await globalHRDService.getCharacteristic(0x8a91);
-
-    await bpmChar.startNotifications();
-
-    log("> Measurement notifications started");
+    const bpmChar = await globalHRDService.getCharacteristic(
+      TRANSTEK_BPM_READ_CHARACTERISTIC
+    );
 
     bpmChar.addEventListener("characteristicvaluechanged", (e) => {
       readMeasurementData(e);
@@ -233,6 +257,9 @@ const readCharChangedBpm = async (event) => {
         readMeasurementData
       );
     });
+
+    await bpmChar.startNotifications();
+    log("> Measurement notifications started");
   }
 };
 
