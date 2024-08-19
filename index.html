@@ -63,7 +63,7 @@
     const device = await navigator.bluetooth.requestDevice({
       acceptAllDevices: true,
     });
-    log(`> User picked ${device.name}`);
+    log(`> User picked ${device.name} (${device.id})`);
     showAuthorizedBTDevice()
       .catch((error) => {
         log(`Error showing authorized devices: ${error}`);
