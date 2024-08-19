@@ -4,14 +4,14 @@ let globalState = "IDLE",
   /** @type {BluetoothRemoteGATTCharacteristic} */
   globalWriteChar;
 
-// HRD means Heart Rate Device
-let globalHRDState = "IDLE",
+// BPM means Blood Pressure Monitor
+let globalBPMState = "IDLE",
   /** @type {BluetoothRemoteGATTService} */
-  globalHRDService,
+  globalBPMService,
   /** @type {BluetoothRemoteGATTCharacteristic} */
-  globalHRDBPMReadChar,
+  globalBPMReadChar,
   /** @type {BluetoothRemoteGATTCharacteristic} */
-  globalHRDBPMWriteChar;
+  globalBPMWriteChar;
 
 let globalPassword;
 const globalAccountId = Math.floor(Math.random() * (Math.pow(2, 32) - 1));
@@ -19,13 +19,13 @@ const globalAccountId = Math.floor(Math.random() * (Math.pow(2, 32) - 1));
 log("globalAccountId : " + globalAccountId);
 
 const setState = (state) => {
-  log("Setting state to: " + state);
+  log("👥: " + state);
   globalState = state;
 };
 
-const setHRDState = (state) => {
-  log("Setting HRD state to: " + state);
-  globalHRDState = state;
+const setBPMState = (state) => {
+  log("❤️: " + state);
+  globalBPMState = state;
 };
 
 const TRANSTEK_WRITE_CHARACTERISTIC = 0x8a81; // [WRITE] Information transfer from App to Device
@@ -77,7 +77,7 @@ const pairDevice = async (device) => {
   // log to the screen if the gatt server disconnects
   if (!globalServer) {
     device.addEventListener("gattserverdisconnected", () => {
-      log("GATT server disconnected");
+      setState("DISCONNECTED");
     });
   }
   readChar.addEventListener("characteristicvaluechanged", (e) => {
@@ -100,35 +100,31 @@ const pairDevice = async (device) => {
 const readCharChangedPairing = async (event) => {
   /** @type {DataView} */
   const value = event.target.value;
-  log("read value : " + value);
-  // We are receiving the password...
+  logValue("charChangedPairing", value);
+
   if (value.getUint8(0) === BLUETOOTH_COMMANDS.PASSWORD) {
     setState("RECEIVED_PASSWORD");
     const password = value.getUint32(1, true);
-    logValue(password);
 
-    // send account id
+    setState("REQUESTING_RANDOM_FROM_ACCOUNT_ID");
     const accountId = globalAccountId;
     await Promise.resolve(globalWriteChar).then((writeChar) => {
       const buffer = new ArrayBuffer(5);
       const view = new DataView(buffer);
       view.setUint8(0, BLUETOOTH_COMMANDS.ACCOUNT);
       view.setUint32(1, accountId, true);
-      setState("REQUESTING_RANDOM");
       return writeChar.writeValue(buffer);
     });
 
     globalPassword = password;
   }
-  // We are receiving the random value...
+
   if (value.getUint8(0) === BLUETOOTH_COMMANDS.RANDOM) {
     setState("RECEIVED_RANDOM_FOR_VERIFICATION");
     const random = value.getUint32(1, true);
-    logValue(random);
-    // calculate verification code
     const verificationCode = computeVerificationCode(globalPassword, random);
-    log("verificationCode : " + verificationCode);
-    // send verification code
+
+    setState("SENDING_VERIFICATION_CODE");
     await Promise.resolve(globalWriteChar).then((writeChar) => {
       const buffer = new ArrayBuffer(5);
       const view = new DataView(buffer);
@@ -136,12 +132,10 @@ const readCharChangedPairing = async (event) => {
       view.setUint32(1, verificationCode, true);
       return writeChar.writeValue(buffer);
     });
-    log("If we get disconnected, the verificationCode must be wrong");
+    // log("If we get disconnected, the verificationCode must be wrong");
 
-    // send time offset
     setState("SENDING_TIME_OFFSET");
     const offset = Math.floor((Date.now() - TRANSTEK_BASE_TIME) / 1000);
-    log("offset : " + offset);
     await Promise.resolve(globalWriteChar).then((writeChar) => {
       const buffer = new ArrayBuffer(5);
       const view = new DataView(buffer);
@@ -150,7 +144,6 @@ const readCharChangedPairing = async (event) => {
       return writeChar.writeValue(buffer);
     });
 
-    // send disconnection
     setState("SENDING_DISCONNECTION");
     await Promise.resolve(globalWriteChar).then((writeChar) => {
       const buffer = new ArrayBuffer(1);
@@ -164,7 +157,6 @@ const readCharChangedPairing = async (event) => {
 };
 
 const measureHeartRateWithDevice = async (device) => {
-  log("Measuring heart rate with Heart Rate Device (HRD)...");
   const server = await device.gatt.connect();
   const serviceId = BLOOD_PRESSURE_MONITOR_OPTS.bluetoothStorageKey;
   const service = await server.getPrimaryService(serviceId);
@@ -175,7 +167,7 @@ const measureHeartRateWithDevice = async (device) => {
     TRANSTEK_WRITE_CHARACTERISTIC
   );
 
-  setHRDState("REQUESTING_RANDOM");
+  setBPMState("REQUESTING_BPM_MEASURE");
 
   readChar.addEventListener("characteristicvaluechanged", (e) => {
     readCharChangedBpm(e);
@@ -186,32 +178,28 @@ const measureHeartRateWithDevice = async (device) => {
   });
 
   await readChar.startNotifications();
-  log("> HRD Notifications started");
+  log("> BPM Notifications started");
 
-  globalHRDService = service;
-  globalHRDBPMWriteChar = writeChar;
+  globalBPMService = service;
+  globalBPMWriteChar = writeChar;
 };
 
 const readCharChangedBpm = async (event) => {
   /** @type {DataView} */
   const value = event.target.value;
-  log("read value BPM : ", value);
-  logValue(value);
+  logValue("BPM Char Changed", value);
 
-  // We are receiving the password...
   if (value.getUint8(0) === BLUETOOTH_COMMANDS.PASSWORD) {
     setState("RECEIVED_PASSWORD");
     const password = value.getUint32(1, true);
-    logValue(password);
 
-    // send account id
+    setState("REQUESTING_RANDOM_FROM_ACCOUNT_ID");
     const accountId = globalAccountId;
-    await Promise.resolve(globalHRDBPMWriteChar).then((writeChar) => {
+    await Promise.resolve(globalBPMWriteChar).then((writeChar) => {
       const buffer = new ArrayBuffer(5);
       const view = new DataView(buffer);
       view.setUint8(0, BLUETOOTH_COMMANDS.ACCOUNT);
       view.setUint32(1, accountId, true);
-      setState("REQUESTING_RANDOM");
       return writeChar.writeValue(buffer);
     });
 
@@ -219,26 +207,22 @@ const readCharChangedBpm = async (event) => {
   }
 
   if (value.getUint8(0) === BLUETOOTH_COMMANDS.RANDOM) {
+    setState("RECEIVED_RANDOM");
     const random = value.getUint32(1, true);
-    logValue(random);
-    // calculate verification code
-    setHRDState("VERIFYING_CODE");
+
+    setBPMState("SENDING_VERIFICATION_CODE");
     const verifCode = computeVerificationCode(globalPassword, random);
-    // send verification code
-    await Promise.resolve(globalHRDBPMWriteChar).then((writeChar) => {
+    await Promise.resolve(globalBPMWriteChar).then((writeChar) => {
       const buffer = new ArrayBuffer(5);
       const view = new DataView(buffer);
       view.setUint8(0, BLUETOOTH_COMMANDS.VERIFICATION_CODE);
       view.setUint32(1, verifCode, true);
-      log("verifCode : ", view.getUint32(1, true).toString(16));
-      logValue(view);
       return writeChar.writeValue(buffer);
     });
-    // send time offset
-    setHRDState("SENDING_TIME_OFFSET");
+
+    setBPMState("SENDING_TIME_OFFSET");
     const offset = Math.floor((Date.now() - TRANSTEK_BASE_TIME) / 1000);
-    log("offset : " + offset);
-    await Promise.resolve(globalHRDBPMWriteChar).then((writeChar) => {
+    await Promise.resolve(globalBPMWriteChar).then((writeChar) => {
       const buffer = new ArrayBuffer(5);
       const view = new DataView(buffer);
       view.setUint8(0, BLUETOOTH_COMMANDS.TIME_OFFSET);
@@ -247,11 +231,14 @@ const readCharChangedBpm = async (event) => {
     });
 
     // Be ready to receive measurement data
-    setHRDState("REQUEST_MEASUREMENT");
-    const bpmChar = await globalHRDService.getCharacteristic(
+    setBPMState("REQUEST_MEASUREMENT");
+    const bpmChar = await globalBPMService.getCharacteristic(
       TRANSTEK_BPM_READ_CHARACTERISTIC
     );
 
+    bpmChar.addEventListener("gattserverdisconnected", (e) => {
+      setBPMState("STATE.DISCONNECTED");
+    });
     bpmChar.addEventListener("characteristicvaluechanged", (e) => {
       readMeasurementData(e);
       bpmChar.removeEventListener(
@@ -267,30 +254,32 @@ const readCharChangedBpm = async (event) => {
 
 const readMeasurementData = async (event) => {
   const value = event.target.value;
-  log("readMeasurementData : " + value);
-  logValue(value);
-  if (globalHRDState !== "REQUEST_MEASUREMENT") {
-    log(`We have received data in state: ${globalHRDState}`);
+  logValue("readMeasurementData", value);
+
+  if (globalBPMState !== "REQUEST_MEASUREMENT") {
+    log(`⚠️ We have received data in state: ${globalBPMState}`);
     return;
   }
-  log("good state!!! : ");
+
   const systolic = value.getUint16(1, true);
   const diastolic = value.getUint16(3, true);
   const pulsation = value.getUint16(11, true);
 
   log(
-    `Systolic: ${systolic}, Diastolic: ${diastolic}, Pulsation: ${pulsation}`
+    [
+      `✅ Systolic: ${systolic}`,
+      `Diastolic: ${diastolic}`,
+      `Pulsation: ${pulsation}`,
+    ].join(", ")
   );
-  // send disconnection
-  setHRDState("STATE.DISCONNECTION");
-  await globalHRDService
-    .getCharacteristic(TRANSTEK_WRITE_CHARACTERISTIC)
-    .then((writeChar) => {
-      const buffer = new ArrayBuffer(1);
-      const view = new DataView(buffer);
-      view.setUint8(0, BLUETOOTH_COMMANDS.DISCONNECT);
-      return writeChar.writeValue(buffer);
-    });
 
-  setHRDState("STATE.DISCONNECTED");
+  setBPMState("SENDING_DISCONNECTION");
+  await Promise.resolve(globalBPMWriteChar).then((writeChar) => {
+    const buffer = new ArrayBuffer(1);
+    const view = new DataView(buffer);
+    view.setUint8(0, BLUETOOTH_COMMANDS.DISCONNECT);
+    return writeChar.writeValue(buffer);
+  });
+
+  setBPMState("MEASURE_ACQUIRED");
 };

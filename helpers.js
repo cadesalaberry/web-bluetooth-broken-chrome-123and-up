@@ -27,9 +27,8 @@ function getBtnForDevice(deviceName, onclick) {
   return listWrapper;
 }
 
-function logValue(value) {
-  ChromeSamples.log(`Logging value: ${value.toString(16)}`);
-  let log = "";
+function logValue(name, value) {
+  let log = `< "${name}": `;
   for (let i = 0; i < value.byteLength; i++) {
     log += value.getUint8(i).toString(16) + " ";
   }

@@ -2,7 +2,7 @@
 <p>This page is a test page to connect to a Transtek Tensiometer using Web Bluetooth API.</p>
 
 <button id="requestBluetoothDevice">Add a new Bluetooth Device</button>
-<button id="pairHRD">Pair Heart Rate Device</button>
+<button id="pairBPM">Add Blood Pressure Monitor</button>
 <h3>Already paired devices:</h3>
 <button id="refreshPairedDevices">Refresh</button>
 <ul id="connectButtons"></ul>
@@ -19,12 +19,11 @@
     clearLogsBtn: document.querySelector('#clearLogs'),
     requestBTDeviceBtn: document.querySelector('#requestBluetoothDevice'),
     connectBtns: document.querySelector('#connectButtons'),
-    pairHRDBtn: document.querySelector('#pairHRD'),
+    pairBPMBtn: document.querySelector('#pairBPM'),
     refreshPairedDevices: document.querySelector('#refreshPairedDevices'),
   }
 
   const connectToBTDevice = async (deviceId) => {
-    log("Getting existing permitted Bluetooth devices...");
     const devices = await navigator.bluetooth.getDevices();
     const device = devices.find(
       (pairedDevice) => pairedDevice.id === deviceId
@@ -72,11 +71,11 @@
       });
   });
 
-  v.pairHRDBtn.addEventListener('click', async () => {
+  v.pairBPMBtn.addEventListener('click', async () => {
     log("Prompting user for a new device...");
     const filter = BLOOD_PRESSURE_MONITOR_OPTS.scanFilter;
     const device = await navigator.bluetooth.requestDevice(filter);
-    log(`> User picked ${device.name}`);
+    log(`> User picked ${device.name} (${device.id})`);
 
     await pairDevice(device, BLOOD_PRESSURE_MONITOR_OPTS)
       .catch((error) => {
@@ -87,7 +86,10 @@
 
   v.clearLogsBtn.addEventListener('click', () => clearLog());
 
-  v.refreshPairedDevices.addEventListener('click', () => showAuthorizedBTDevice());
+  v.refreshPairedDevices.addEventListener('click', () => {
+    log("> User refreshed authorized devices...");
+    showAuthorizedBTDevice();
+  });
 
   const main = async () => {
     if (!isWebBluetoothEnabled) {
