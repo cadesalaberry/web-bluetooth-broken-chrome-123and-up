@@ -112,7 +112,7 @@ const readCharChangedPairing = async (event) => {
     await Promise.resolve(globalWriteChar).then((writeChar) => {
       const buffer = new ArrayBuffer(5);
       const view = new DataView(buffer);
-      view.setUint8(0, 0x21);
+      view.setUint8(0, BLUETOOTH_COMMANDS.ACCOUNT);
       view.setUint32(1, accountId, true);
       setState("REQUESTING_RANDOM");
       return writeChar.writeValue(buffer);
@@ -179,10 +179,10 @@ const measureHeartRateWithDevice = async (device) => {
 
   readChar.addEventListener("characteristicvaluechanged", (e) => {
     readCharChangedBpm(e);
-    // readChar.removeEventListener(
-    //   "characteristicvaluechanged",
-    //   readCharChangedBpm
-    // );
+    readChar.removeEventListener(
+      "characteristicvaluechanged",
+      readCharChangedBpm
+    );
   });
 
   await readChar.startNotifications();
@@ -209,7 +209,7 @@ const readCharChangedBpm = async (event) => {
     await Promise.resolve(globalHRDBPMWriteChar).then((writeChar) => {
       const buffer = new ArrayBuffer(5);
       const view = new DataView(buffer);
-      view.setUint8(0, 0x21);
+      view.setUint8(0, BLUETOOTH_COMMANDS.ACCOUNT);
       view.setUint32(1, accountId, true);
       setState("REQUESTING_RANDOM");
       return writeChar.writeValue(buffer);
@@ -236,11 +236,13 @@ const readCharChangedBpm = async (event) => {
     });
     // send time offset
     setHRDState("SENDING_TIME_OFFSET");
+    const offset = Math.floor((Date.now() - TRANSTEK_BASE_TIME) / 1000);
+    log("offset : " + offset);
     await Promise.resolve(globalHRDBPMWriteChar).then((writeChar) => {
       const buffer = new ArrayBuffer(5);
       const view = new DataView(buffer);
       view.setUint8(0, BLUETOOTH_COMMANDS.TIME_OFFSET);
-      view.setUint32(1, 0x0af8d2d16, true);
+      view.setUint32(1, offset, true);
       return writeChar.writeValue(buffer);
     });
 
@@ -286,7 +288,7 @@ const readMeasurementData = async (event) => {
     .then((writeChar) => {
       const buffer = new ArrayBuffer(1);
       const view = new DataView(buffer);
-      view.setUint8(0, 0x22);
+      view.setUint8(0, BLUETOOTH_COMMANDS.DISCONNECT);
       return writeChar.writeValue(buffer);
     });
 
