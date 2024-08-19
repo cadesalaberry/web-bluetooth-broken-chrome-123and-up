@@ -18,10 +18,13 @@ var ChromeSamples = {
 };
 
 function getBtnForDevice(deviceName, onclick) {
+  const listWrapper = document.createElement("li");
   const connectButton = document.createElement("button");
-  connectButton.textContent = deviceName;
+  listWrapper.textContent = deviceName;
+  connectButton.textContent = "Listen for measures";
   connectButton.addEventListener("click", onclick);
-  return connectButton;
+  listWrapper.appendChild(connectButton);
+  return listWrapper;
 }
 
 function logValue(value) {

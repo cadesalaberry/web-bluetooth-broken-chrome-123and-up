@@ -268,12 +268,12 @@ const readCharChangedBpm = async (event) => {
 const readMeasurementData = async (event) => {
   const value = event.target.value;
   log("readMeasurementData : " + value);
+  logValue(value);
   if (globalHRDState !== "REQUEST_MEASUREMENT") {
     log(`We have received data in state: ${globalHRDState}`);
     return;
   }
   log("good state!!! : ");
-  logValue(value);
   const systolic = value.getUint16(1, true);
   const diastolic = value.getUint16(3, true);
   const pulsation = value.getUint16(11, true);

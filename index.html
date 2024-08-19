@@ -3,9 +3,9 @@
 
 <button id="requestBluetoothDevice">Add a new Bluetooth Device</button>
 <button id="pairHRD">Pair Heart Rate Device</button>
-<button id="measureHeartRate">Start Heart Rate Measure</button>
-<h3>Authorized devices connect buttons</h3>
-<div id="connectButtons"></div>
+<h3>Already paired devices:</h3>
+<button id="refreshPairedDevices">Refresh</button>
+<ul id="connectButtons"></ul>
 
 <h3>Live Output</h3>
 <pre id="log"></pre>
@@ -19,39 +19,40 @@
     clearLogsBtn: document.querySelector('#clearLogs'),
     requestBTDeviceBtn: document.querySelector('#requestBluetoothDevice'),
     connectBtns: document.querySelector('#connectButtons'),
-    measureHeartRateBtn: document.querySelector('#measureHeartRate'),
     pairHRDBtn: document.querySelector('#pairHRD'),
+    refreshPairedDevices: document.querySelector('#refreshPairedDevices'),
   }
 
-  const connectToBTDevice = async (deviceName) => {
+  const connectToBTDevice = async (deviceId) => {
     log("Getting existing permitted Bluetooth devices...");
     const devices = await navigator.bluetooth.getDevices();
     const device = devices.find(
-      (pairedDevice) => pairedDevice.name === deviceName
+      (pairedDevice) => pairedDevice.id === deviceId
     );
     if (!device) {
-      log(`No authorized device was found with this name: ${deviceName}`);
+      log(`No authorized device was found with this id: ${deviceId}`);
       return;
     }
-    log(`"${deviceName}" was found, attempting connection...`);
+    log(`"${device.name}" (${deviceId}) was found, attempting connection...`);
 
-    const gattServer = await device.gatt.connect();
-    log(`Connected successfully to ${deviceName}`);
-    return gattServer;
+    return measureHeartRateWithDevice(device);
   }
 
   const showAuthorizedBTDevice = async () => {
     v.connectBtns.innerHTML = '';
     const devices = await navigator.bluetooth.getDevices();
+    log(`Found ${devices.length} authorized devices.`);
+    console.log({ devices });
     const buttons = devices.map((device) => {
       const onclick = () => {
-        log(`Connecting to ${device.name}...`);
-        connectToBTDevice(device.name).catch((error) => {
+        log(`Connecting to ${device.name} (${device.id})...`);
+        connectToBTDevice(device.id).catch((error) => {
           log(`Error connecting to ${device.name}: ${error}`);
           throw error;
         });
       }
-      return getBtnForDevice(device.name, onclick);
+      const name = `${device.name} (${device.id})`;
+      return getBtnForDevice(name, onclick);
     });
 
     buttons.forEach((button) => v.connectBtns.appendChild(button));
@@ -84,21 +85,9 @@
       });
   });
 
-  v.measureHeartRateBtn.addEventListener('click', async () => {
-    log("Prompting user for a new device...");
-    const filter = BLOOD_PRESSURE_MONITOR_OPTS.scanFilter;
-    const device = await navigator.bluetooth.requestDevice(filter);
-    log(`> User picked ${device.name}`);
-
-    await measureHeartRateWithDevice(device)
-      .catch((error) => {
-        log(`Error measuring heart rate: ${error}`);
-        throw error;
-      });
-  });
-
   v.clearLogsBtn.addEventListener('click', () => clearLog());
 
+  v.refreshPairedDevices.addEventListener('click', () => showAuthorizedBTDevice());
 
   const main = async () => {
     if (!isWebBluetoothEnabled) {
