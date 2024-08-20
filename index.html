@@ -28,13 +28,14 @@
     const device = devices.find(
       (pairedDevice) => pairedDevice.id === deviceId
     );
+    const password = getPasswordForDeviceId(deviceId);
     if (!device) {
       log(`No authorized device was found with this id: ${deviceId}`);
       return;
     }
     log(`"${device.name}" (${deviceId}) was found, attempting connection...`);
 
-    return measureHeartRateWithDevice(device);
+    return measureHeartRateWithDevice(device, password);
   }
 
   const showAuthorizedBTDevice = async () => {

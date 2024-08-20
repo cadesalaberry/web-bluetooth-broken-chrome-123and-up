@@ -46,5 +46,15 @@ function computeVerificationCode(password, random) {
   return (password ^ random) >>> 0;
 }
 
+function getPasswordForDeviceId(deviceId) {
+  const key = `bt-password-${deviceId}`;
+  return localStorage.getItem(key);
+}
+
+function savePasswordForDeviceId(deviceId, password) {
+  const key = `bt-password-${deviceId}`;
+  localStorage.setItem(key, password);
+}
+
 log = ChromeSamples.log;
 clearLog = ChromeSamples.clearLog;
