@@ -11,39 +11,69 @@ https://cadesalaberry.github.io/web-bluetooth-broken-chrome-123and-up/
 - Enable ff `chrome://flags/#enable-web-bluetooth-new-permissions-backend`
 - Enable ff `chrome://flags/#enable-experimental-web-platform-features`
 
-## Working Flow on Chromium Version 120.0.6086.0 (Developer Build) (arm64)
+## Working Flow on Chromium Version 122.0.6261.128 (Official Build) (arm64)
+
+- Add the device with the "Add Blood Pressure Monitor" button
+- Select it in the device picker
+- Pairing should now be successful
+- REFRESH THE PAGE
+- Click on the "Listen for measures" button
+- This should result in a `NetworkError: Bluetooth Device is no longer in range.`
+- Start a measure on the blood pressure monitor
+- Once the bluetooth icon is blinking on the device it means that it is trying to upload the results to a computer
+- Click on the "Listen for measures" button
+- You should get the following log:
 
 ```
-globalAccountId : 4254967178
+globalAccountId : 1249353131
 Found 2 authorized devices.
-Prompting user for a new device...
-> User picked 1810A0 (dgYlbPIgHaSl0kippgpq8g==)
-> Notifications started
-< "charChangedPairing": a0 6d 6d e3 94
-👥: RECEIVED_PASSWORD
-👥: REQUESTING_RANDOM_FROM_ACCOUNT_ID
-< "charChangedPairing": a1 1d 20 27 0
-👥: RECEIVED_RANDOM_FOR_VERIFICATION
-👥: SENDING_VERIFICATION_CODE
-👥: SENDING_TIME_OFFSET
-👥: SENDING_DISCONNECTION
-👥: PAIRED
-👥: DISCONNECTED
-Connecting to 1810A0 (dgYlbPIgHaSl0kippgpq8g==)...
-"1810A0" (dgYlbPIgHaSl0kippgpq8g==) was found, attempting connection...
+Connecting to 0810A0306F36F9 (TUSdb0vaZffDHjs11Z4zug==)...
+"0810A0306F36F9" (TUSdb0vaZffDHjs11Z4zug==) was found, attempting connection...
+Error connecting to 0810A0306F36F9: NetworkError: Bluetooth Device is no longer in range.
+Connecting to 0810A0306F36F9 (TUSdb0vaZffDHjs11Z4zug==)...
+"0810A0306F36F9" (TUSdb0vaZffDHjs11Z4zug==) was found, attempting connection...
 ❤️: REQUESTING_BPM_MEASURE
 > BPM Notifications started
-< "BPM Char Changed": a1 3a 4 8 0
-👥: RECEIVED_RANDOM
+< "BPM Char Changed": a1 ab 0 9 0
+❤️: RECEIVED_RANDOM
 ❤️: SENDING_VERIFICATION_CODE
 ❤️: SENDING_TIME_OFFSET
 ❤️: REQUEST_MEASUREMENT
-> Measurement notifications started
-< "readMeasurementData": 1e 72 0 45 0 5c 0 13 23 86 1b 51 0 0 0 60
-✅ Systolic: 114, Diastolic: 69, Pulsation: 81
+> Start notifications for BPM
+✅ Systolic: 113, Diastolic: 78, Pulsation: 67
 ❤️: SENDING_DISCONNECTION
 ❤️: MEASURE_ACQUIRED
-👥: DISCONNECTED
+```
+
+## Failing Flow on Chrome Version 123.0.6312.122 (Official Build) (arm64)
+
+Follow the instructions for the working flow on 122.
+Once the page is refreshed, chrome is unable to connect back to the device. It always appear as `no longer in range`.
+
+```
+globalAccountId : 741820389
+Found 2 authorized devices.
+Connecting to 0810A0306F36F9 (TUSdb0vaZffDHjs11Z4zug==)...
+"0810A0306F36F9" (TUSdb0vaZffDHjs11Z4zug==) was found, attempting connection...
+Error connecting to 0810A0306F36F9: NetworkError: Bluetooth Device is no longer in range.
+Connecting to 0810A0306F36F9 (TUSdb0vaZffDHjs11Z4zug==)...
+"0810A0306F36F9" (TUSdb0vaZffDHjs11Z4zug==) was found, attempting connection...
+Error connecting to 0810A0306F36F9: NetworkError: Bluetooth Device is no longer in range.
+Connecting to 0810A0306F36F9 (TUSdb0vaZffDHjs11Z4zug==)...
+"0810A0306F36F9" (TUSdb0vaZffDHjs11Z4zug==) was found, attempting connection...
+Error connecting to 0810A0306F36F9: NetworkError: Bluetooth Device is no longer in range.
+Connecting to 0810A0306F36F9 (TUSdb0vaZffDHjs11Z4zug==)...
+"0810A0306F36F9" (TUSdb0vaZffDHjs11Z4zug==) was found, attempting connection...
+Error connecting to 0810A0306F36F9: NetworkError: Bluetooth Device is no longer in range.
+Connecting to 0810A0306F36F9 (TUSdb0vaZffDHjs11Z4zug==)...
+"0810A0306F36F9" (TUSdb0vaZffDHjs11Z4zug==) was found, attempting connection...
+Error connecting to 0810A0306F36F9: NetworkError: Bluetooth Device is no longer in range.
+Connecting to 0810A0306F36F9 (TUSdb0vaZffDHjs11Z4zug==)...
+"0810A0306F36F9" (TUSdb0vaZffDHjs11Z4zug==) was found, attempting connection...
+Error connecting to 0810A0306F36F9: NetworkError: Bluetooth Device is no longer in range.
+Connecting to 0810A0306F36F9 (TUSdb0vaZffDHjs11Z4zug==)...
+"0810A0306F36F9" (TUSdb0vaZffDHjs11Z4zug==) was found, attempting connection...
+Error connecting to 0810A0306F36F9: NetworkError: Bluetooth Device is no longer in range.
 ```
 
 ## Crash on Version 127.0.6533.120 (Official Build) (arm64)
