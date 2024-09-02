@@ -1,6 +1,10 @@
 <h1>Test Page to connect to a Transtek Tensiometer</h1>
 <p>This page is a test page to connect to a Transtek Tensiometer using Web Bluetooth API.</p>
-
+<p>Make sure you enable the two following feature flags:</p>
+<ul>
+  <li><code>chrome://flags/#enable-experimental-web-platform-features</code></li>
+  <li><code>chrome://flags/#enable-web-bluetooth</code></li>
+</ul>
 <button id="requestBluetoothDevice">Add a new Bluetooth Device</button>
 <button id="pairBPM">Add Blood Pressure Monitor</button>
 <h3>Already paired devices:</h3>

@@ -4,6 +4,10 @@ The page to test is available here:
 
 https://cadesalaberry.github.io/web-bluetooth-broken-chrome-123and-up/
 
+The issue has been reported here:
+
+https://issues.chromium.org/issues/360888485
+
 ## Requirements
 
 - Tested on a Chromebook 126
@@ -86,4 +90,31 @@ Found 2 authorized devices.
 Prompting user for a new device...
 > User picked 1810A0 (dgYlbPIgHaSl0kippgpq8g==)
 >>>> CRASH <<<<
+```
+
+## Failing Flow on Version 130.0.6693.0 (Official Build) canary (arm64)
+
+I tried after this issue was fixed: https://issues.chromium.org/issues/362116535
+The crash does not happen anymore.
+However I still cannot get the data sent by the bluetooth device once the page is refreshed.
+Getting the data works before a page reload.
+
+```
+globalAccountId : 3428219340
+Found 2 authorized devices.
+Connecting to 1810A0 (hSgm1F2U85RusQqkXoN3pw==)...
+"1810A0" (hSgm1F2U85RusQqkXoN3pw==) was found, attempting connection...
+Error connecting to 1810A0: NetworkError: Bluetooth Device is no longer in range.
+Connecting to 1810A0 (hSgm1F2U85RusQqkXoN3pw==)...
+"1810A0" (hSgm1F2U85RusQqkXoN3pw==) was found, attempting connection...
+Error connecting to 1810A0: NetworkError: Bluetooth Device is no longer in range.
+Connecting to 1810A0 (hSgm1F2U85RusQqkXoN3pw==)...
+"1810A0" (hSgm1F2U85RusQqkXoN3pw==) was found, attempting connection...
+Error connecting to 1810A0: NetworkError: Bluetooth Device is no longer in range.
+Connecting to 1810A0 (hSgm1F2U85RusQqkXoN3pw==)...
+"1810A0" (hSgm1F2U85RusQqkXoN3pw==) was found, attempting connection...
+Error connecting to 1810A0: NetworkError: Bluetooth Device is no longer in range.
+Connecting to 1810A0 (hSgm1F2U85RusQqkXoN3pw==)...
+"1810A0" (hSgm1F2U85RusQqkXoN3pw==) was found, attempting connection...
+Error connecting to 1810A0: NetworkError: Bluetooth Device is no longer in range.
 ```
