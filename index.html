@@ -42,21 +42,51 @@
     return measureHeartRateWithDevice(device, password);
   }
 
+  const connectToBTDeviceAfterAdvertisement = async (deviceId) => {
+    const devices = await navigator.bluetooth.getDevices();
+    const device = devices.find(
+      (pairedDevice) => pairedDevice.id === deviceId
+    );
+    const password = getPasswordForDeviceId(deviceId);
+    if (!device) {
+      log(`No authorized device was found with this id: ${deviceId}`);
+      return;
+    }
+    log(`"${device.name}" (${deviceId}) was found, attempting connection...`);
+
+    return new Promise((resolve, reject) => {
+      log(`Waiting for advertisement from device #${device.id}...`);
+      device.addEventListener('advertisementreceived', async (event) => {
+        console.log('Advertisement received:', event);
+        log(`Advertisement received: ${event}`);
+        const measure = await measureHeartRateWithDevice(device, password);
+        resolve(measure);
+      });
+    });
+  }
+
   const showAuthorizedBTDevice = async () => {
     v.connectBtns.innerHTML = '';
     const devices = await navigator.bluetooth.getDevices();
     log(`Found ${devices.length} authorized devices.`);
     console.log({ devices });
     const buttons = devices.map((device) => {
-      const onclick = () => {
+      const onListen = () => {
         log(`Connecting to ${device.name} (${device.id})...`);
         connectToBTDevice(device.id).catch((error) => {
           log(`Error connecting to ${device.name}: ${error}`);
           throw error;
         });
       }
+      const onListenAfterAdvertisement = () => {
+        log(`Connecting to ${device.name} (${device.id})...`);
+        connectToBTDeviceAfterAdvertisement(device.id).catch((error) => {
+          log(`Error connecting to ${device.name}: ${error}`);
+          throw error;
+        });
+      }
       const name = `${device.name} (${device.id})`;
-      return getBtnForDevice(name, onclick);
+      return getBtnsForDevice(name, onListen, onListenAfterAdvertisement);
     });
 
     buttons.forEach((button) => v.connectBtns.appendChild(button));

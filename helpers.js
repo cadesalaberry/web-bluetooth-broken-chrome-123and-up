@@ -17,13 +17,20 @@ var ChromeSamples = {
   },
 };
 
-function getBtnForDevice(deviceName, onclick) {
+function getBtnsForDevice(deviceName, onlisten, onlistenAfterAdvertisement) {
   const listWrapper = document.createElement("li");
   const connectButton = document.createElement("button");
+  const connectAfterAdvertisementButton = document.createElement("button");
   listWrapper.textContent = deviceName;
   connectButton.textContent = "Listen for measures";
-  connectButton.addEventListener("click", onclick);
+  connectAfterAdvertisementButton.textContent = "Listen AFTER advertisement";
+  connectButton.addEventListener("click", onlisten);
+  connectAfterAdvertisementButton.addEventListener(
+    "click",
+    onlistenAfterAdvertisement
+  );
   listWrapper.appendChild(connectButton);
+  listWrapper.appendChild(connectAfterAdvertisementButton);
   return listWrapper;
 }
 
