@@ -126,7 +126,7 @@ Error connecting to 1810A0: NetworkError: Bluetooth Device is no longer in range
 I tried the blood pressure monitor on a `ASUS Chromebook C523N (board: coral)` I had lying around.
 
 ```
-Google Chrome	126.0.6478.222 (Build officiel) (64 bits) 
+Google Chrome	126.0.6478.222 (Build officiel) (64 bits)
 Révision	803933f6b3177592370be766f36d7095a1903fd0-refs/branch-heads/6478@{#1853}
 Plate-forme	15886.74.0 (Official Build) stable-channel coral
 Version du micrologiciel	Google_Coral.10068.113.0
@@ -134,6 +134,7 @@ ID de la personnalisation	BABYTIGER
 ```
 
 After clicking 5 times on "Listen for measures", all the "Connection attempt failed" are displayed at the same time.
+
 ```
 globalAccountId : 4194637317
 Found 1 authorized devices.
@@ -152,4 +153,36 @@ Error connecting to 1810A0: NetworkError: Connection Error: Connection attempt f
 Error connecting to 1810A0: NetworkError: Connection Error: Connection attempt failed.
 Error connecting to 1810A0: NetworkError: Connection Error: Connection attempt failed.
 Error connecting to 1810A0: NetworkError: Connection Error: Connection attempt failed.
+```
+
+## 2024.09.09 - Successful Flow on ChromeOS - 120.0.6099.331 (Build officiel) (64 bits)
+
+```
+globalAccountId : 3313465336
+Found 1 authorized devices.
+Connecting to 1810A0 (eCk8EaFEjWQdbbM0AhmsKw==)...
+"1810A0" (eCk8EaFEjWQdbbM0AhmsKw==) was found, attempting connection...
+Waiting for advertisement from device #eCk8EaFEjWQdbbM0AhmsKw==...
+Advertisement received: [object BluetoothAdvertisingEvent]
+❤️ : REQUESTING_BPM_MEASURE
+> BPM Notifications started
+< "BPM Char Changed": a1 f4 0 a 0
+❤️ : RECEIVED_RANDOM
+❤️ : SENDING_VERIFICATION_CODE
+❤️ : SENDING_TIME_OFFSET
+❤️ : REQUEST_MEASUREMENT
+> Start notifications for BPM
+✅ Systolic: 126, Diastolic: 87, Pulsation: 73
+❤️ : SENDING_DISCONNECTION
+❤️ : MEASURE_ACQUIRED
+```
+
+## 2024.09.09 - Failing Flow on ChromeOS - 127.0.6533.138 (Build officiel) (64 bits)
+
+```
+globalAccountId : 4245209078
+Found 1 authorized devices.
+Connecting to 1810A0 (asfjzDiWcbBpW1Is7+9PMA==)...
+"1810A0" (asfjzDiWcbBpW1Is7+9PMA==) was found, attempting connection...
+Waiting for advertisement from device #asfjzDiWcbBpW1Is7+9PMA==...
 ```
