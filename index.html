@@ -54,6 +54,8 @@
     }
     log(`"${device.name}" (${deviceId}) was found, attempting connection...`);
 
+    const abortController = new AbortController();
+
     return new Promise((resolve, reject) => {
       log(`Waiting for advertisement from device #${device.id}...`);
       device.addEventListener('advertisementreceived', async (event) => {
@@ -62,6 +64,10 @@
         const measure = await measureHeartRateWithDevice(device, password);
         resolve(measure);
       });
+      device.watchAdvertisements({ signal: abortController.signal })
+        .catch(error => {
+          log('Argh! ' + error);
+        });
     });
   }
 
