@@ -186,3 +186,21 @@ Connecting to 1810A0 (asfjzDiWcbBpW1Is7+9PMA==)...
 "1810A0" (asfjzDiWcbBpW1Is7+9PMA==) was found, attempting connection...
 Waiting for advertisement from device #asfjzDiWcbBpW1Is7+9PMA==...
 ```
+
+## 2024.09.10 - chrome://device-log
+
+I collected bluetooth logs from the `chrome://device-log` page, with the blood pressure monitor `1810A0 (94:E3:6D:6D:E7:3B)`.
+Here is the scenario I followed on both devices:
+
+- open the `chrome://device-log` page and filter on bluetooth only
+- make sure the device is not already paired on the Chromebook. device.forget() if needed.
+- refresh the pairing page page
+- proceed with pairing the blood pressure monitor on the pairing page (With "Add Blood Pressure Monitor")
+- refresh the page
+- proceed with a measure from the blood pressure monitor (With "Listen AFTER advertisement")
+- I expect the measure to show up on screen (✅ on M120, ❌ on M127)
+
+The two log files are in the repo:
+
+- [M120](./M120_94_E3_6D_6D_E7_3B.mhtml)
+- [M127](./M127_94_E3_6D_6D_E7_3B.mhtml)
