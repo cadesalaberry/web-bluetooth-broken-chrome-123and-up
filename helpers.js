@@ -17,21 +17,48 @@ var ChromeSamples = {
   },
 };
 
-function getBtnsForDevice(deviceName, onlisten, onlistenAfterAdvertisement) {
-  const listWrapper = document.createElement("li");
+function getLineForDevice(
+  deviceName,
+  deviceId,
+  onlisten,
+  onlistenAfterAdvertisement,
+  onlistenAfterAdvertisementHack
+) {
+  const tableRow = document.createElement("tr");
+  const deviceNameCell = document.createElement("td");
+  deviceNameCell.textContent = deviceName;
+  const deviceIdCell = document.createElement("td");
+  deviceIdCell.textContent = deviceId;
+
   const connectButton = document.createElement("button");
-  const connectAfterAdvertisementButton = document.createElement("button");
-  listWrapper.textContent = deviceName;
   connectButton.textContent = "Listen for measures";
-  connectAfterAdvertisementButton.textContent = "Listen AFTER advertisement";
   connectButton.addEventListener("click", onlisten);
+
+  const connectAfterAdvertisementButton = document.createElement("button");
+  connectAfterAdvertisementButton.textContent = "Listen AFTER advertisement";
   connectAfterAdvertisementButton.addEventListener(
     "click",
     onlistenAfterAdvertisement
   );
-  listWrapper.appendChild(connectButton);
-  listWrapper.appendChild(connectAfterAdvertisementButton);
-  return listWrapper;
+
+  const connectAfterAdvertisementHackButton = document.createElement("button");
+  connectAfterAdvertisementHackButton.textContent =
+    "Listen with ADVERTISEMENT HACK";
+  connectAfterAdvertisementHackButton.addEventListener(
+    "click",
+    onlistenAfterAdvertisementHack
+  );
+
+  const deviceActionsCell = document.createElement("td");
+  deviceActionsCell.appendChild(connectButton);
+  deviceActionsCell.appendChild(connectAfterAdvertisementButton);
+  deviceActionsCell.appendChild(connectAfterAdvertisementHackButton);
+
+  tableRow.appendChild(deviceIdCell);
+  tableRow.appendChild(deviceNameCell);
+  tableRow.appendChild(deviceActionsCell);
+
+  return tableRow;
 }
 
 function logValue(name, value) {

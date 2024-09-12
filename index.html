@@ -9,12 +9,33 @@
 <button id="pairBPM">Add Blood Pressure Monitor</button>
 <h3>Already paired devices:</h3>
 <button id="refreshPairedDevices">Refresh</button>
-<ul id="connectButtons"></ul>
+<table>
+  <thead>
+    <tr>
+      <th>Device ID</th>
+      <th>Device Name</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody id="connectedDevicesTable">
+    <!-- Rows will be added here -->
+    <tr>
+      <td colspan="3">There are no authorized devices yet.</td>
+    </tr>
+  </tbody>
+</table>
 
 <h3>Live Output</h3>
 <pre id="log"></pre>
 <button id="clearLogs">Clear logs</button>
 
+<style>
+  table,
+  th,
+  td {
+    border: 1px solid black;
+  }
+</style>
 <script src="helpers.js"></script>
 <script src="bluetooth-logic.js"></script>
 <script>
@@ -22,7 +43,7 @@
   const v = {
     clearLogsBtn: document.querySelector('#clearLogs'),
     requestBTDeviceBtn: document.querySelector('#requestBluetoothDevice'),
-    connectBtns: document.querySelector('#connectButtons'),
+    connectedDevicesTable: document.querySelector('#connectedDevicesTable'),
     pairBPMBtn: document.querySelector('#pairBPM'),
     refreshPairedDevices: document.querySelector('#refreshPairedDevices'),
   }
@@ -33,11 +54,27 @@
       (pairedDevice) => pairedDevice.id === deviceId
     );
     const password = getPasswordForDeviceId(deviceId);
-    if (!device) {
-      log(`No authorized device was found with this id: ${deviceId}`);
-      return;
-    }
+
     log(`"${device.name}" (${deviceId}) was found, attempting connection...`);
+
+    return measureHeartRateWithDevice(device, password);
+  }
+
+  const connectToBTDeviceUsingAdvertisementHack = async (deviceId) => {
+    const devices = await navigator.bluetooth.getDevices();
+    const device = devices.find(
+      (pairedDevice) => pairedDevice.id === deviceId
+    );
+    const password = getPasswordForDeviceId(deviceId);
+
+    device.watchAdvertisements().then((advertisement) => {
+      console.log('HACK Advertisement returned', advertisement);
+    }).catch(error => {
+      log('HACK Advertisement failed' + error);
+      console.log('HACK Advertisement failed');
+    });
+    // Wait for the advertisement to be received
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     return measureHeartRateWithDevice(device, password);
   }
@@ -48,11 +85,6 @@
       (pairedDevice) => pairedDevice.id === deviceId
     );
     const password = getPasswordForDeviceId(deviceId);
-    if (!device) {
-      log(`No authorized device was found with this id: ${deviceId}`);
-      return;
-    }
-    log(`"${device.name}" (${deviceId}) was found, attempting connection...`);
 
     const abortController = new AbortController();
 
@@ -72,30 +104,38 @@
   }
 
   const showAuthorizedBTDevice = async () => {
-    v.connectBtns.innerHTML = '';
+    v.connectedDevicesTable.innerHTML = '';
     const devices = await navigator.bluetooth.getDevices();
     log(`Found ${devices.length} authorized devices.`);
     console.log({ devices });
-    const buttons = devices.map((device) => {
+    const lines = devices.map((device) => {
       const onListen = () => {
-        log(`Connecting to ${device.name} (${device.id})...`);
+        log(`Connecting to ${device.name} (${device.id}) using BRUTEFORCE strategy...`);
         connectToBTDevice(device.id).catch((error) => {
-          log(`Error connecting to ${device.name}: ${error}`);
+          log(`Error found using BRUTEFORCE strategy connecting to ${device.name}: ${error}`);
           throw error;
         });
       }
       const onListenAfterAdvertisement = () => {
-        log(`Connecting to ${device.name} (${device.id})...`);
+        log(`Connecting to ${device.name} (${device.id}) using ADVERTISEMENT strategy...`);
         connectToBTDeviceAfterAdvertisement(device.id).catch((error) => {
-          log(`Error connecting to ${device.name}: ${error}`);
+          log(`Error found using ADVERTISEMENT strategy connecting to ${device.name}: ${error}`);
           throw error;
         });
       }
-      const name = `${device.name} (${device.id})`;
-      return getBtnsForDevice(name, onListen, onListenAfterAdvertisement);
+      const onListenUsingAdvertisementHack = () => {
+        log(`Connecting to ${device.name} (${device.id}) using ADVERTISEMENT_HACK strategy...`);
+        connectToBTDeviceUsingAdvertisementHack(device.id).catch((error) => {
+          log(`Error found using ADVERTISEMENT_HACK strategy connecting to ${device.name}: ${error}`);
+          throw error;
+        });
+      }
+      const name = device.name;
+      const id = device.id;
+      return getLineForDevice(name, id, onListen, onListenAfterAdvertisement, onListenUsingAdvertisementHack);
     });
 
-    buttons.forEach((button) => v.connectBtns.appendChild(button));
+    lines.forEach((line) => v.connectedDevicesTable.appendChild(line));
   }
 
   v.requestBTDeviceBtn.addEventListener('click', async () => {
