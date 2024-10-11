@@ -204,3 +204,68 @@ The two log files are in the repo:
 
 - [M120](./M120_94_E3_6D_6D_E7_3B.mhtml)
 - [M127](./M127_94_E3_6D_6D_E7_3B.mhtml)
+
+
+## 2024.10.11 - Successful Flow on ChromeOS - 130.0.6723.36 (Build officiel) beta (64 bits)
+
+Trying with "Listen with ADVERTISEMENT HACK" several times, attempts were succesful
+Here is the scenario I followed on the chromebook:
+
+- Add Blood Pressure Monitor => pair the device
+- Refresh the page
+- Refresh the devices
+- Start a measure on the blood pressure monitor
+- First attempt: Click on the "Listen with ADVERTISEMENT HACK" button at the middle and end of the measure
+- Second attempt: Click on the "Listen with ADVERTISEMENT HACK" button at the end of the measure only once
+- Third attempt: Click on the "Listen with ADVERTISEMENT HACK" button at the beginning and end of the measure
+- Every attempt were successful, even with errors like "Unknown error when connecting to the device" and "Bluetooth Device is no longer in range"
+- Tested in salle calme with probably a lot of noises around
+
+```
+globalAccountId : 2047375666
+Found 1 authorized devices.
+> User refreshed authorized devices...
+Found 1 authorized devices.
+Connecting to 1810A0 (W1OKFHw/m8vZLKNZhjhRYg==) using ADVERTISEMENT_HACK strategy...
+Error found using ADVERTISEMENT_HACK strategy connecting to 1810A0: NetworkError: Unknown error when connecting to the device.
+Connecting to 1810A0 (W1OKFHw/m8vZLKNZhjhRYg==) using ADVERTISEMENT_HACK strategy...
+Error found using ADVERTISEMENT_HACK strategy connecting to 1810A0: NetworkError: Bluetooth Device is no longer in range.
+Connecting to 1810A0 (W1OKFHw/m8vZLKNZhjhRYg==) using ADVERTISEMENT_HACK strategy...
+❤️: REQUESTING_BPM_MEASURE
+> BPM Notifications started
+< "BPM Char Changed": a1 b8 1 10 0 
+❤️: RECEIVED_RANDOM
+❤️: SENDING_VERIFICATION_CODE
+❤️: SENDING_TIME_OFFSET
+❤️: REQUEST_MEASUREMENT
+> Start notifications for BPM
+✅ Systolic: 127, Diastolic: 63, Pulsation: 78
+❤️: SENDING_DISCONNECTION
+❤️: MEASURE_ACQUIRED
+Connecting to 1810A0 (W1OKFHw/m8vZLKNZhjhRYg==) using ADVERTISEMENT_HACK strategy...
+❤️: REQUESTING_BPM_MEASURE
+> BPM Notifications started
+< "BPM Char Changed": a1 4b 0 3d 0 
+❤️: RECEIVED_RANDOM
+❤️: SENDING_VERIFICATION_CODE
+❤️: SENDING_TIME_OFFSET
+❤️: REQUEST_MEASUREMENT
+> Start notifications for BPM
+✅ Systolic: 124, Diastolic: 66, Pulsation: 77
+❤️: SENDING_DISCONNECTION
+❤️: MEASURE_ACQUIRED
+Connecting to 1810A0 (W1OKFHw/m8vZLKNZhjhRYg==) using ADVERTISEMENT_HACK strategy...
+Error found using ADVERTISEMENT_HACK strategy connecting to 1810A0: NetworkError: Bluetooth Device is no longer in range.
+Connecting to 1810A0 (W1OKFHw/m8vZLKNZhjhRYg==) using ADVERTISEMENT_HACK strategy...
+❤️: REQUESTING_BPM_MEASURE
+> BPM Notifications started
+< "BPM Char Changed": a1 d 0 39 0 
+❤️: RECEIVED_RANDOM
+❤️: SENDING_VERIFICATION_CODE
+❤️: SENDING_TIME_OFFSET
+❤️: REQUEST_MEASUREMENT
+> Start notifications for BPM
+✅ Systolic: 122, Diastolic: 81, Pulsation: 83
+❤️: SENDING_DISCONNECTION
+❤️: MEASURE_ACQUIRED
+```
