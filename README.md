@@ -269,3 +269,17 @@ Connecting to 1810A0 (W1OKFHw/m8vZLKNZhjhRYg==) using ADVERTISEMENT_HACK strateg
 ❤️: SENDING_DISCONNECTION
 ❤️: MEASURE_ACQUIRED
 ```
+
+# Demonstration of the required usecase - 2024.11.04 - Failing Flow on Mac M3 Pro - 130.0.6723.92 (Build officiel) (arm64)
+In the context of integrating and reading TRANSTEK LS810-BS results in our web application via the web Bluetooth API. We tried the following:
+
+- Pair the device by calling requestDevice which triggers a popup on which we find the device that we want we pair to it.
+- Connect to the GATT server through `device.gatt.connect()` every time we want to read the measurements from the device through a NOTIFY and READ characteristics. (even after page refresh or browser close/reopen or even computer restart)
+
+This was working up until version v120 of Chrome, after that version, the following happened:
+- We Pair the device through requestDevice.
+- If the page is refreshed, then we try to do device.gatt.connect() to read the measurements. We systematically get the error "Device out of range".
+  
+I'll add a video showcasing how my device works, I used the Nordic Semiconductor Android app nRF connect in my testing to be sure that my device does not advertise after measurements and it only advertises while being in "Pairing mode" https://drive.google.com/file/d/1XANUyP4zmprpUNBd0ogCKhaSTDIZG4fR/view?usp=sharing
+
+A video showcasing the problem on the web app https://drive.google.com/file/d/16NJ6fNpqWkWaGPapJEFc40ZBDckT6dc_/view?usp=sharing
