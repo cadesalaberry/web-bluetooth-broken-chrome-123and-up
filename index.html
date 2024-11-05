@@ -66,16 +66,8 @@
       (pairedDevice) => pairedDevice.id === deviceId
     );
     const password = getPasswordForDeviceId(deviceId);
-
-    device.watchAdvertisements().then((advertisement) => {
-      console.log('HACK Advertisement returned', advertisement);
-    }).catch(error => {
-      log('HACK Advertisement failed' + error);
-      console.log('HACK Advertisement failed');
-    });
-    // Wait for the advertisement to be received
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
+ 
+    await device.watchAdvertisements();
     return measureHeartRateWithDevice(device, password);
   }
 
