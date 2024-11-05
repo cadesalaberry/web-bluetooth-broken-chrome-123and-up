@@ -72,11 +72,12 @@
     }
     const listenFromAdvertisement = () => new Promise(async (resolve, reject) => {
       const watchInterval = setInterval(() => {
+        log(`Listening for advertisement from device #${device.id}...`);
         device.watchAdvertisements().catch((error) => {
           log('Argh! ' + error);
           reject(error);
         });
-      }, 2000);
+      }, 10000);
 
       const onAdvertized = () => {
         log(`Advertisement received: ${JSON.stringify(event)}`);
@@ -86,6 +87,7 @@
       }
 
       device.addEventListener('advertisementreceived', onAdvertized);
+      log(`Listening for advertisement from device #${device.id}...`);
       device.watchAdvertisements().catch((error) => {
         log('Argh! ' + error);
         reject(error);
