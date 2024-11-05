@@ -23,6 +23,7 @@ function getLineForDevice(
   onlisten,
   onlistenAfterAdvertisement,
   onlistenAfterAdvertisementHack,
+  onlistenAfterWatchingAdvertisementAndRetry,
   onForget
 ) {
   const tableRow = document.createElement("tr");
@@ -50,6 +51,15 @@ function getLineForDevice(
     onlistenAfterAdvertisementHack
   );
 
+  const connectAfterWatchingAdvertisementAndRetryButton = document.createElement("button");
+  connectAfterWatchingAdvertisementAndRetryButton.textContent =
+    "Listen with watching advertisement and retry";
+    connectAfterWatchingAdvertisementAndRetryButton.addEventListener(
+    "click",
+    onlistenAfterWatchingAdvertisementAndRetry
+  );
+
+
   const forgetDeviceButton = document.createElement("button");
   forgetDeviceButton.textContent =
     "Forget device";
@@ -62,6 +72,7 @@ function getLineForDevice(
   deviceActionsCell.appendChild(connectButton);
   deviceActionsCell.appendChild(connectAfterAdvertisementButton);
   deviceActionsCell.appendChild(connectAfterAdvertisementHackButton);
+  deviceActionsCell.appendChild(connectAfterWatchingAdvertisementAndRetryButton);
   deviceActionsCell.appendChild(forgetDeviceButton);
 
   tableRow.appendChild(deviceIdCell);

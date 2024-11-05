@@ -97,6 +97,34 @@
     return measureHeartRateWithDevice(device, password);
   }
 
+  const connectToBTDeviceAfterWatchingAdvertisementAndRetry = async (deviceId) => {
+    const devices = await navigator.bluetooth.getDevices();
+    const device = devices.find(
+      (pairedDevice) => pairedDevice.id === deviceId
+    );
+    const password = getPasswordForDeviceId(deviceId);
+    const MAX_RETRIES = 30;
+    const RETRY_INTERVAL = 5000;
+    let retries = MAX_RETRIES;
+    while (retries > 0) {
+      retries -= 1;
+      try {
+      if (retries === 0) {
+        throw new Error('Max retries reached');
+      }
+      await device.watchAdvertisements();
+      await device.gatt.connect();
+      if (device.gatt.connected) {
+        break;
+      }
+      } catch (error) {
+      log(`Error connecting to device #${device?.id}: ${error}`);
+      }
+      await new Promise(resolve => setTimeout(resolve, RETRY_INTERVAL));
+    }
+    return await measureHeartRateWithDevice(device, password)
+  }
+
   const connectToBTDeviceAfterAdvertisement = async (deviceId) => {
     const devices = await navigator.bluetooth.getDevices();
     const device = devices.find(
@@ -149,6 +177,14 @@
         });
       }
 
+      const onListenAfterWatchingAdvertisementAndRetry = () => {
+        log(`Connecting to ${device.name} (${device.id}) using After watching advertisement and retry strategy...`);
+        connectToBTDeviceAfterWatchingAdvertisementAndRetry(device.id).catch((error) => {
+          log(`Error found using After watching advertisement and retry strategy strategy connecting to ${device.name}: ${error}`);
+          throw error;
+        });
+      }
+
       const onForget = async() => {
         log(`Forgetting ${device.name} (${device.id})...`);
         device.forget().then(() => {
@@ -160,7 +196,7 @@
       }
       const name = device.name;
       const id = device.id;
-      return getLineForDevice(name, id, onListen, onListenAfterAdvertisement, onListenUsingAdvertisementHack, onForget);
+      return getLineForDevice(name, id, onListen, onListenAfterAdvertisement, onListenUsingAdvertisementHack, onListenAfterWatchingAdvertisementAndRetry, onForget);
     });
 
     lines.forEach((line) => v.connectedDevicesTable.appendChild(line));
