@@ -22,7 +22,8 @@ function getLineForDevice(
   deviceId,
   onlisten,
   onlistenAfterAdvertisement,
-  onlistenAfterAdvertisementHack
+  onlistenAfterAdvertisementHack,
+  onForget
 ) {
   const tableRow = document.createElement("tr");
   const deviceNameCell = document.createElement("td");
@@ -49,10 +50,19 @@ function getLineForDevice(
     onlistenAfterAdvertisementHack
   );
 
+  const forgetDeviceButton = document.createElement("button");
+  forgetDeviceButton.textContent =
+    "Forget device";
+    forgetDeviceButton.addEventListener(
+    "click",
+    onForget
+  );
+
   const deviceActionsCell = document.createElement("td");
   deviceActionsCell.appendChild(connectButton);
   deviceActionsCell.appendChild(connectAfterAdvertisementButton);
   deviceActionsCell.appendChild(connectAfterAdvertisementHackButton);
+  deviceActionsCell.appendChild(forgetDeviceButton);
 
   tableRow.appendChild(deviceIdCell);
   tableRow.appendChild(deviceNameCell);
