@@ -103,6 +103,7 @@
         try {
           await device.watchAdvertisements();
           await device.gatt.connect();
+          log(`Connected to device #${device.id}`);
           if (device.gatt.connected) {
             resolve();
           }
