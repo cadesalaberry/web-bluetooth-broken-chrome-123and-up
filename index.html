@@ -113,8 +113,8 @@
             reject(error);
             return;
           }
-          setTimeout(() => {
-            attemptConnect(retries - 1);
+          setTimeout(async() => {
+            await attemptConnect(retries - 1);
           }, RETRY_INTERVAL_MS);
         }
       });
