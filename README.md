@@ -283,3 +283,5 @@ This was working up until version v120 of Chrome, after that version, the follow
 I'll add a video showcasing how my device works, I used the Nordic Semiconductor Android app nRF connect in my testing to be sure that my device does not advertise after measurements and it only advertises while being in "Pairing mode" https://drive.google.com/file/d/1XANUyP4zmprpUNBd0ogCKhaSTDIZG4fR/view?usp=sharing
 
 A video showcasing the problem on the web app https://drive.google.com/file/d/16NJ6fNpqWkWaGPapJEFc40ZBDckT6dc_/view?usp=sharing
+
+*UPDATE:* The test in the video is not valid, as I was using a filter on the name of the device, and the device advertises itself under a different name. This lead to me not catching the advertisement of my device, which advertises briefly for approximately 60 seconds. I have done measurements on the time of advertisement of the device on this repo: https://github.com/MeddahAbdellah/measure-ls810-bs-advertisement-time
