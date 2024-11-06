@@ -14,6 +14,7 @@
     <tr>
       <th>Device ID</th>
       <th>Device Name</th>
+      <th>Device Connection Status</th>
       <th>Actions</th>
     </tr>
   </thead>
@@ -48,7 +49,7 @@
     refreshPairedDevices: document.querySelector('#refreshPairedDevices'),
   }
 
-  const connectToBTDevice = async (deviceId) => {
+  const readMeasurement = async (deviceId) => {
     const devices = await navigator.bluetooth.getDevices();
     const device = devices.find(
       (pairedDevice) => pairedDevice.id === deviceId
@@ -59,27 +60,21 @@
 
     return measureHeartRateWithDevice(device, password);
   }
-
-  const connectToBTDeviceUsingAdvertisementHack = async (deviceId) => {
+  const repeatWatchUntilEventStrategy = async (deviceId) => {
     const devices = await navigator.bluetooth.getDevices();
     const device = devices.find(
       (pairedDevice) => pairedDevice.id === deviceId
     );
     const password = getPasswordForDeviceId(deviceId);
-    const advertisementReceivedCb = (resolve) => async (event) => {
-      log(`Advertisement received: ${JSON.stringify(event)}`);
-      resolve();
-    }
-    const listenFromAdvertisement = () => new Promise(async (resolve, reject) => {
-      const watchInterval = setInterval(() => {
-        log(`Listening for advertisement from device #${device.id}...`);
-        device.watchAdvertisements().catch((error) => {
-          log('Argh! ' + error);
-          reject(error);
-        });
-      }, 10000);
+    const WATCH_INTERVAL_MS = 5000;
 
-      const onAdvertized = () => {
+    const listenForAdvertisement = () => new Promise(async (resolve, reject) => {
+      const watchInterval = setInterval(async () => {
+        log(`Listening for advertisement from device #${device.id}...`);
+        await device.watchAdvertisements().catch(reject);
+      }, WATCH_INTERVAL_MS);
+
+      const onAdvertized = (event) => {
         log(`Advertisement received: ${JSON.stringify(event)}`);
         resolve();
         clearInterval(watchInterval);
@@ -88,104 +83,92 @@
 
       device.addEventListener('advertisementreceived', onAdvertized);
       log(`Listening for advertisement from device #${device.id}...`);
-      device.watchAdvertisements().catch((error) => {
-        log('Argh! ' + error);
-        reject(error);
-      });
+      device.watchAdvertisements().catch(reject);
     })
-    await listenFromAdvertisement();
-    return measureHeartRateWithDevice(device, password);
+    await listenForAdvertisement();
+    await device.gatt.connect();
   }
 
-  const connectToBTDeviceAfterWatchingAdvertisementAndRetry = async (deviceId) => {
+  const repeatWatchUntilConnectStrategy = async (deviceId) => {
     const devices = await navigator.bluetooth.getDevices();
     const device = devices.find(
       (pairedDevice) => pairedDevice.id === deviceId
     );
     const password = getPasswordForDeviceId(deviceId);
-    const MAX_RETRIES = 30;
-    const RETRY_INTERVAL = 5000;
-    let retries = MAX_RETRIES;
-    while (retries > 0) {
-      retries -= 1;
-      try {
-      if (retries === 0) {
-        throw new Error('Max retries reached');
-      }
-      await device.watchAdvertisements();
-      await device.gatt.connect();
-      if (device.gatt.connected) {
-        break;
-      }
-      } catch (error) {
-      log(`Error connecting to device #${device?.id}: ${error}`);
-      }
-      await new Promise(resolve => setTimeout(resolve, RETRY_INTERVAL));
-    }
-    return await measureHeartRateWithDevice(device, password)
-  }
+    const MAX_RETRIES = 60;
+    const RETRY_INTERVAL_MS = 5000;
 
-  const connectToBTDeviceAfterAdvertisement = async (deviceId) => {
-    const devices = await navigator.bluetooth.getDevices();
-    const device = devices.find(
-      (pairedDevice) => pairedDevice.id === deviceId
-    );
-    const password = getPasswordForDeviceId(deviceId);
-
-    const abortController = new AbortController();
-
-    return new Promise((resolve, reject) => {
-      log(`Waiting for advertisement from device #${device.id}...`);
-      device.addEventListener('advertisementreceived', async (event) => {
-        console.log('Advertisement received:', event);
-        log(`Advertisement received: ${event}`);
-        const measure = await measureHeartRateWithDevice(device, password);
-        resolve(measure);
+    const attemptConnect = (retries) => {
+      return new Promise(async (resolve, reject) => {
+        try {
+          await device.watchAdvertisements();
+          await device.gatt.connect();
+          if (device.gatt.connected) {
+            resolve();
+          }
+        } catch (error) {
+          log(`Error connecting to device #${device.id}: ${error}`);
+          if (retries === 0) {
+            reject(error);
+            return;
+          }
+          setTimeout(() => {
+            attemptConnect(retries - 1);
+          }, RETRY_INTERVAL_MS);
+        }
       });
-      device.watchAdvertisements({ signal: abortController.signal })
-        .catch(error => {
-          log('Argh! ' + error);
-        });
-    });
+    }
+
+    await attemptConnect(MAX_RETRIES);
+  }
+
+  const naiveStrategy = async (deviceId) => {
+    const devices = await navigator.bluetooth.getDevices();
+    const device = devices.find(
+      (pairedDevice) => pairedDevice.id === deviceId
+    );
+    const password = getPasswordForDeviceId(deviceId);
+
+    device.addEventListener('advertisementreceived', async (event) => {
+        log(`Advertisement received: ${event}`);
+        await device.gatt.connect();
+      });
+
+    device.watchAdvertisements();
   }
 
   const showAuthorizedBTDevice = async () => {
     v.connectedDevicesTable.innerHTML = '';
     const devices = await navigator.bluetooth.getDevices();
     log(`Found ${devices.length} authorized devices.`);
-    console.log({ devices });
     const lines = devices.map((device) => {
-      const onListen = () => {
-        log(`Connecting to ${device.name} (${device.id}) using BRUTEFORCE strategy...`);
-        connectToBTDevice(device.id).catch((error) => {
-          log(`Error found using BRUTEFORCE strategy connecting to ${device.name}: ${error}`);
-          throw error;
-        });
+      const onConnect = async () => {
+        log(`Connecting to ${device.name} (${device.id})...`);
+        try{
+          await device.gatt.connect();
+          log(`Connected to "${device.name}" (${device.id})`);
+        } catch (error) {
+          log(`Error connecting to "${device.name}" (${device.id}): ${error}`);
+        }
       }
-      const onListenAfterAdvertisement = () => {
-        log(`Connecting to ${device.name} (${device.id}) using ADVERTISEMENT strategy...`);
-        connectToBTDeviceAfterAdvertisement(device.id).catch((error) => {
-          log(`Error found using ADVERTISEMENT strategy connecting to ${device.name}: ${error}`);
-          throw error;
-        });
-      }
-      const onListenUsingAdvertisementHack = () => {
-        log(`Connecting to ${device.name} (${device.id}) using ADVERTISEMENT_HACK strategy...`);
-        connectToBTDeviceUsingAdvertisementHack(device.id).catch((error) => {
-          log(`Error found using ADVERTISEMENT_HACK strategy connecting to ${device.name}: ${error}`);
-          throw error;
+
+      const onWatchAdvertisement = async () => {
+        device.watchAdvertisements().then(async () => {
+          log(`Watching advertisement for ${device.name} (${device.id})...`);
+        }).catch((error) => {
+          log(`Error watching advertisement for device ${device.name} (${device.id}): ${error}`);
         });
       }
 
-      const onListenAfterWatchingAdvertisementAndRetry = () => {
-        log(`Connecting to ${device.name} (${device.id}) using After watching advertisement and retry strategy...`);
-        connectToBTDeviceAfterWatchingAdvertisementAndRetry(device.id).catch((error) => {
-          log(`Error found using After watching advertisement and retry strategy strategy connecting to ${device.name}: ${error}`);
-          throw error;
+      const onRead = async () => {
+        const password = getPasswordForDeviceId(device.id);
+        log(`"${device.name}" (${device.id}) reading measurement...`);
+        measureHeartRateWithDevice(device, password).catch((error) => {
+          log(`Error reading measurement from "${device.name}" (${device.id}): ${error}`);
         });
       }
 
-      const onForget = async() => {
+      const onForget = async () => {
         log(`Forgetting ${device.name} (${device.id})...`);
         device.forget().then(() => {
           log(`Device ${device.name} (${device.id}) forgotten.`);
@@ -194,9 +177,61 @@
           throw error;
         });
       }
+  
+      const onNaiveStrategy = () => {
+        log(`Connecting to ${device.name} (${device.id}) using Naive strategy...`);
+        naiveStrategy(device.id).catch((error) => {
+          log(`Error found using Naive strategy connecting to ${device.name}: ${error}`);
+          throw error;
+        });
+      }
+
+      const onRepeatWatchUntilEventStrategy = () => {
+        log(`Connecting to ${device.name} (${device.id}) using Repeat watch until event strategy...`);
+        repeatWatchUntilEventStrategy(device.id).catch((error) => {
+          log(`Error found using Repeat watch until event strategy connecting to ${device.name}: ${error}`);
+          throw error;
+        });
+      }
+
+      const onRepeatWatchUntilConnectStrategy = () => {
+        log(`Connecting to ${device.name} (${device.id}) using Repeat watch until connect strategy...`);
+        repeatWatchUntilConnectStrategy(device.id).catch((error) => {
+          log(`Error found using Repeat watch until connect strategy connecting to ${device.name}: ${error}`);
+          throw error;
+        });
+      }
+
+      const toConnectionStatusObservable = (device) => {
+        let cb;
+        let state = "Not connected";
+        setInterval(() => {
+          if(!cb) return;
+          if (device.gatt.connected && state === "Not connected") {
+            cb('Connected');
+          } else if (!device.gatt.connected && state === "Connected") {
+            cb('Disconnected');
+          }
+        }, 1000);
+
+        return { subscribe: (callback) => cb = callback };
+      }
+
+
       const name = device.name;
       const id = device.id;
-      return getLineForDevice(name, id, onListen, onListenAfterAdvertisement, onListenUsingAdvertisementHack, onListenAfterWatchingAdvertisementAndRetry, onForget);
+      return getLineForDevice(
+        name,
+        id,
+        onConnect,
+        onWatchAdvertisement,
+        onRead,
+        onForget,
+        onNaiveStrategy,
+        onRepeatWatchUntilEventStrategy,
+        onRepeatWatchUntilConnectStrategy,
+        toConnectionStatusObservable(device)
+      );
     });
 
     lines.forEach((line) => v.connectedDevicesTable.appendChild(line));
