@@ -98,9 +98,9 @@
     const abortController = new AbortController();
     await device.watchAdvertisements({ signal: abortController.signal });
 
-    const onWindowFocus = () => {
+    const onWindowFocus = async () => {
       log(`Window focused, starting watching advertisements for device #${device.id}`);
-      device.watchAdvertisements({ signal: abortController.signal });
+      await device.watchAdvertisements({ signal: abortController.signal });
     }
 
     const onWindowUnfocus = () => {
