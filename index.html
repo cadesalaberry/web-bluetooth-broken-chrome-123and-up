@@ -194,10 +194,10 @@
         });
       }
 
-      const onRepeatWatchUntilConnectStrategy = () => {
+      const onWatchAndRewatchOnFocusUnfocus= () => {
         log(`Connecting to ${device.name} (${device.id}) using Repeat watch until connect strategy...`);
-        repeatWatchUntilConnectStrategy(device.id).catch((error) => {
-          log(`Error found using Repeat watch until connect strategy connecting to ${device.name}: ${error}`);
+        watchAndRewatchOnFocusUnfocus(device.id).catch((error) => {
+          log(`Error found using Repeat watch and rewatch on focus/unfocus strategy connecting to ${device.name}: ${error}`);
           throw error;
         });
       }
@@ -229,7 +229,7 @@
         onForget,
         onNaiveStrategy,
         onRepeatWatchUntilEventStrategy,
-        watchAndRewatchOnFocusUnfocus,
+        onWatchAndRewatchOnFocusUnfocus,
         toConnectionStatusObservable(device)
       );
     });
