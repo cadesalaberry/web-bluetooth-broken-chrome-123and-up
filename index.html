@@ -95,12 +95,13 @@
       (pairedDevice) => pairedDevice.id === deviceId
     );
     const password = getPasswordForDeviceId(deviceId);
-    const abortController = new AbortController();
-    await device.watchAdvertisements({ signal: abortController.signal });
+    let abortController = new AbortController();
+    device.watchAdvertisements({ signal: abortController.signal });
 
     const onWindowFocus = async () => {
       log(`Window focused, starting watching advertisements for device #${device.id}`);
-      await device.watchAdvertisements({ signal: abortController.signal });
+      abortController = new AbortController();
+      device.watchAdvertisements({ signal: abortController.signal });
     }
 
     const onWindowUnfocus = () => {
