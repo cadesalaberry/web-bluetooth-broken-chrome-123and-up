@@ -89,38 +89,37 @@
     await device.gatt.connect();
   }
 
-  const repeatWatchUntilConnectStrategy = async (deviceId) => {
+  const watchAndRewatchOnFocusUnfocus = async (deviceId) => {
     const devices = await navigator.bluetooth.getDevices();
     const device = devices.find(
       (pairedDevice) => pairedDevice.id === deviceId
     );
     const password = getPasswordForDeviceId(deviceId);
-    const MAX_RETRIES = 60;
-    const RETRY_INTERVAL_MS = 5000;
+    const abortController = new AbortController();
+    await device.watchAdvertisements({ signal: abortController.signal });
 
-    const attemptConnect = (retries) => {
-      return new Promise(async (resolve, reject) => {
-        try {
-          await device.watchAdvertisements();
-          await device.gatt.connect();
-          log(`Connected to device #${device.id}`);
-          if (device.gatt.connected) {
-            resolve();
-          }
-        } catch (error) {
-          log(`Error connecting to device #${device.id}: ${error}`);
-          if (retries === 0) {
-            reject(error);
-            return;
-          }
-          setTimeout(async() => {
-            await attemptConnect(retries - 1);
-          }, RETRY_INTERVAL_MS);
-        }
-      });
+    const onWindowFocus = () => {
+      log(`Window focused, starting watching advertisements for device #${device.id}`);
+      device.watchAdvertisements({ signal: abortController.signal });
     }
 
-    await attemptConnect(MAX_RETRIES);
+    const onWindowUnfocus = () => {
+      log(`Window unfocused, stopping watching advertisements for device #${device.id}`);
+      abortController.abort();
+    }
+
+    const onAdvertized = async (event) => {
+      log(`Advertisement received: ${JSON.stringify(event)}`);
+      window.removeEventListener('blur', onWindowUnfocus);
+      window.removeEventListener('focus', onWindowFocus);
+      device.removeEventListener('advertisementreceived', onAdvertized);
+      await device.gatt.connect();
+      log(`Connected to device #${device.id}`);
+    }
+
+    window.addEventListener('blur', onWindowUnfocus);
+    window.addEventListener('focus', onWindowFocus);
+    device.addEventListener('advertisementreceived', onAdvertized);
   }
 
   const naiveStrategy = async (deviceId) => {
@@ -230,7 +229,7 @@
         onForget,
         onNaiveStrategy,
         onRepeatWatchUntilEventStrategy,
-        onRepeatWatchUntilConnectStrategy,
+        watchAndRewatchOnFocusUnfocus,
         toConnectionStatusObservable(device)
       );
     });

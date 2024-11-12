@@ -26,7 +26,7 @@ function getLineForDevice(
   onForget,
   onNaiveStrategy,
   onRepeatWatchUntilEventStrategy,
-  onRepeatWatchUntilConnectStrategy,
+  onWatchAndRewatchOnFocusUnfocus,
   connectionStatus$
 ) {
   const tableRow = document.createElement("tr");
@@ -77,12 +77,12 @@ function getLineForDevice(
     onRepeatWatchUntilEventStrategy
   );
 
-  const repeatWatchUntilConnectStrategyButton = document.createElement("button");
-  repeatWatchUntilConnectStrategyButton.textContent =
-    "Repeat watch until connect strategy";
-    repeatWatchUntilConnectStrategyButton.addEventListener(
+  const watchAndRewatchOnFocusUnfocusButton = document.createElement("button");
+  watchAndRewatchOnFocusUnfocusButton.textContent =
+    "Watch and rewatch on focus/unfocus";
+    watchAndRewatchOnFocusUnfocusButton.addEventListener(
     "click",
-    onRepeatWatchUntilConnectStrategy
+    onWatchAndRewatchOnFocusUnfocus
   );
 
 
@@ -100,7 +100,7 @@ function getLineForDevice(
   deviceActionsCell.appendChild(readButton);
   deviceActionsCell.appendChild(naiveStrategyButton);
   deviceActionsCell.appendChild(repeatWatchUntilEventStrategyButton);
-  deviceActionsCell.appendChild(repeatWatchUntilConnectStrategyButton);
+  deviceActionsCell.appendChild(watchAndRewatchOnFocusUnfocusButton);
   deviceActionsCell.appendChild(forgetDeviceButton);
 
   tableRow.appendChild(deviceIdCell);
